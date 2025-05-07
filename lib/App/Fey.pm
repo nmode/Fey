@@ -10,12 +10,10 @@ our $version = '0.01';
 sub new {
     my ($class, $args) = @_;
     my $config = do ($ENV{XDG_CONFIG_HOME} // "$ENV{HOME}/.config") . '/fey/config.pl';
-    my $placeholder = $args->{placeholder} // $config->{placeholder} // '//f';
 
     my $self = {
-        contexts => $args->{contexts} // $config->{contexts} // { default => 1 },
-        placeholder => $placeholder,
-        mime_query => $args->{mime_query} // $config->{mime_query} // "file --brief --mime-type $placeholder",
+        mime_query => $args->{mime_query} // $config->{mime_query} // sub { `file --brief --mime-type "$_[0]"` },
+        contexts => $args->{contexts} // $config->{contexts} // { default => sub { 1 } },
         targets => $args->{targets} // $config->{targets} // {}
     };
 
@@ -31,8 +29,7 @@ sub launch {
 
     my ($mime_or_uri, $targets);
     if (-e $file_or_uri) {
-        $mime_or_uri = $self->{mime_query} =~ s/$self->{placeholder}/"$file_or_uri"/r;
-        $mime_or_uri = `$mime_or_uri`;
+        $mime_or_uri = $self->{mime_query}->($file_or_uri)
     } else {
         $mime_or_uri = $file_or_uri;
     }
@@ -42,10 +39,8 @@ sub launch {
             if ($mime_or_uri =~ /$pattern/) {
                 my $associations = $target->{associations};
                 for my $context (keys %{ $associations }) {
-                    if ($self->{contexts}->{$context}) {
-                        my $command = $associations->{$context};
-                        $command =~ s/$self->{placeholder}/"$file_or_uri"/;
-                        `$command`;
+                    if ($self->{contexts}->{$context}->()) {
+                        $associations->{$context}->($file_or_uri);
                         return;
                     }
                 }
