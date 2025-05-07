@@ -21,27 +21,29 @@ sub new {
 }
 
 sub launch {
-    my ($self, $file_or_uri) = @_;
+    my $self = shift;
 
-    if ($file_or_uri =~ m|^file://(.+)|) {
-        $file_or_uri = $1;
-    }
+    ARG: for my $file_or_uri (@_) {
+        if ($file_or_uri =~ m|^file://(.+)|) {
+            $file_or_uri = $1;
+        }
 
-    my ($mime_or_uri, $targets);
-    if (-e $file_or_uri) {
-        $mime_or_uri = $self->{mime_query}->($file_or_uri)
-    } else {
-        $mime_or_uri = $file_or_uri;
-    }
+        my ($mime_or_uri, $targets);
+        if (-e $file_or_uri) {
+            $mime_or_uri = $self->{mime_query}->($file_or_uri)
+        } else {
+            $mime_or_uri = $file_or_uri;
+        }
 
-    for my $target (@{ $self->{targets} }) {
-        for my $pattern (@{ $target->{patterns} }) {
-            if ($mime_or_uri =~ /$pattern/) {
-                my $associations = $target->{associations};
-                for my $context (keys %{ $associations }) {
-                    if ($self->{contexts}->{$context}->()) {
-                        $associations->{$context}->($file_or_uri);
-                        return;
+        for my $target (@{ $self->{targets} }) {
+            for my $pattern (@{ $target->{patterns} }) {
+                if ($mime_or_uri =~ /$pattern/) {
+                    my $associations = $target->{associations};
+                    for my $context (keys %{ $associations }) {
+                        if ($self->{contexts}->{$context}->()) {
+                            $associations->{$context}->($file_or_uri);
+                            next ARG;
+                        }
                     }
                 }
             }
@@ -50,5 +52,5 @@ sub launch {
 }
 
 sub fey {
-    App::Fey->new($_[1] // {})->launch($_[0] // die 'Error: No file or URI specified.');
+    App::Fey->new(ref $_[0] ? shift : {})->launch(@_ ? @_ : die 'Error: No files or URIs specified.');
 }
