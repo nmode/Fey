@@ -12,7 +12,10 @@ sub new {
     my $config = do ($ENV{XDG_CONFIG_HOME} // "$ENV{HOME}/.config") . '/fey/config.pl';
 
     my $self = {
-        mime_query => $args->{mime_query} // $config->{mime_query} // sub { `file --brief --mime-type "$_[0]"` },
+        mime_query => $args->{mime_query} // $config->{mime_query} // sub {
+            open my $mime_type, '-|', 'file', '--brief', '--mime-type', $_[0];
+            <$mime_type>;
+        },
         contexts => $args->{contexts} // $config->{contexts} // { default => sub { 1 } },
         targets => $args->{targets} // $config->{targets} // {}
     };
