@@ -35,16 +35,8 @@ sub launch {
             next ARG if ($pid);
         }
 
-        if ($file_or_uri =~ m|^file://(.+)|) {
-            $file_or_uri = $1;
-        }
-
-        my ($mime_or_uri, $targets);
-        if (-e $file_or_uri) {
-            $mime_or_uri = $self->{mime_query}->($file_or_uri)
-        } else {
-            $mime_or_uri = $file_or_uri;
-        }
+        $file_or_uri = $1 if ($file_or_uri =~ m|^file://(.+)|);
+        my $mime_or_uri = -e $file_or_uri ? $self->{mime_query}->($file_or_uri) : $file_or_uri;
 
         for my $target (@{ $self->{targets} }) {
             for my $pattern (@{ $target->{patterns} }) {
