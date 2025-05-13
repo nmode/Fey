@@ -30,6 +30,11 @@ sub launch {
     die "No files or URIs specified.\n" unless @_;
 
     ARG: for my $file_or_uri (@_) {
+        if ($options->{fork} && !$options->{single}) {
+            my $pid = fork;
+            next ARG if ($pid);
+        }
+
         if ($file_or_uri =~ m|^file://(.+)|) {
             $file_or_uri = $1;
         }
@@ -52,6 +57,7 @@ sub launch {
                                 return;
                             }
                             $associations->{$context}->($file_or_uri);
+                            return if ($options->{fork});
                             next ARG;
                         }
                     }
