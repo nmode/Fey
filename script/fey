@@ -1,0 +1,19 @@
+#!perl
+
+use strict;
+use warnings;
+
+use Getopt::Long;
+use App::Fey qw(fey);
+
+my $options = {
+    fork => 0,
+    single => 0
+};
+
+GetOptions(
+    'f|fork' => \$options->{fork},
+    's|single' => \$options->{single}
+);
+
+fey $options, @ARGV;
