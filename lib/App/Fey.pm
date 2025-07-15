@@ -29,29 +29,60 @@ sub launch {
 
     die "No files or URIs specified.\n" unless @_;
 
-    ARG: for my $file_or_uri (@_) {
-        if ($options->{fork} && !$options->{single}) {
+    if ($options->{single}) {
+        $self->_launch_single($options, @_);
+    } else {
+        $self->_launch($options, @_);
+    }
+}
+
+sub _launch {
+    my $self = shift;
+    my $options = shift;
+
+    if ($options->{fork}) {
+        for my $file_or_uri (@_) {
             my $pid = fork;
-            next ARG if ($pid);
+            next if $pid;
+
+            my $handler = $self->_get_handler($file_or_uri);
+            $handler->($file_or_uri) if $handler;
+            return;
         }
+    } else {
+        for my $file_or_uri (@_) {
+            my $handler = $self->_get_handler($file_or_uri);
+            $handler->($file_or_uri) if $handler;
+        }
+    }
+}
 
-        $file_or_uri = $1 if ($file_or_uri =~ m|^file://(.+)|);
-        my $mime_or_uri = -e $file_or_uri ? $self->{mime_query}->($file_or_uri) : $file_or_uri;
+sub _launch_single {
+    my $self = shift;
+    my $options = shift;
 
-        for my $target (@{ $self->{targets} }) {
-            for my $pattern (@{ $target->{patterns} }) {
-                if ($mime_or_uri =~ /$pattern/) {
-                    my $associations = $target->{associations};
-                    for my $context (keys %{ $associations }) {
-                        if ($self->{contexts}->{$context}->()) {
-                            if ($options->{single}) {
-                                $associations->{$context}->(@_);
-                                return;
-                            }
-                            $associations->{$context}->($file_or_uri);
-                            return if ($options->{fork});
-                            next ARG;
-                        }
+    if ($options->{fork}) {
+        my $pid = fork;
+        return if $pid;
+    }
+
+    my $handler = $self->_get_handler($_[0]);
+    $handler->(@_) if $handler;
+}
+
+sub _get_handler {
+    my $self = shift;
+    
+    my $file_or_uri = $_[0] =~ m|^file://(.+)| ? $1 : $_[0];
+    my $mime_or_uri = -e $file_or_uri ? $self->{mime_query}->($file_or_uri) : $file_or_uri;
+
+    for my $target (@{ $self->{targets} }) {
+        for my $pattern (@{ $target->{patterns} }) {
+            if ($mime_or_uri =~ /$pattern/) {
+                my $associations = $target->{associations};
+                for my $context (keys %{ $associations }) {
+                    if ($self->{contexts}->{$context}->()) {
+                        return $associations->{$context};
                     }
                 }
             }
