@@ -29,7 +29,9 @@ sub launch {
 
     die "No files or URIs specified.\n" unless @_;
 
-    if ($options->{single}) {
+    if ($options->{group}) {
+        $self->_launch_group($options, @_);
+    } elsif ($options->{single}) {
         $self->_launch_single($options, @_);
     } else {
         $self->_launch($options, @_);
@@ -53,6 +55,37 @@ sub _launch {
         for my $file_or_uri (@_) {
             my $handler = $self->_get_handler($file_or_uri);
             $handler->($file_or_uri) if $handler;
+        }
+    }
+}
+
+sub _launch_group {
+    my $self = shift;
+    my $options = shift;
+
+    my ($groups, $handlers) = ({}, {});
+    for my $file_or_uri (@_) {
+        my $handler = $self->_get_handler($file_or_uri);
+        if ($handler) {
+            $groups->{"$handler"} //= [];
+            push @{ $groups->{"$handler"} }, $file_or_uri;
+            $handlers->{"$handler"} = $handler;
+        }
+    }
+
+    if ($options->{fork}) {
+        for my $group (keys %{ $groups }) {
+            if ($options->{fork}) {
+                my $pid = fork;
+                next if $pid;
+            }
+
+            $handlers->{$group}->(@{ $groups->{$group} });
+            return;
+        }
+    } else {
+        for my $group (keys %{ $groups }) {
+            $handlers->{$group}->(@{ $groups->{$group} });
         }
     }
 }

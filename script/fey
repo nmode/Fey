@@ -8,11 +8,13 @@ use App::Fey qw(fey);
 
 my $options = {
     fork => 0,
+    group => 0,
     single => 0
 };
 
 GetOptions(
     'f|fork' => \$options->{fork},
+    'g|group' => \$options->{group},
     's|single' => \$options->{single}
 );
 
