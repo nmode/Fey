@@ -7,12 +7,14 @@ use Getopt::Long;
 use App::Fey qw(fey);
 
 my $options = {
+    context => undef,
     fork => 0,
     group => 0,
     single => 0
 };
 
 GetOptions(
+    'c|context:s' => \$options->{context},
     'f|fork' => \$options->{fork},
     'g|group' => \$options->{group},
     's|single' => \$options->{single}
