@@ -10,6 +10,7 @@ my $options = {
     context => undef,
     fork => 0,
     group => 0,
+    interactive => 0,
     single => 0
 };
 
@@ -17,6 +18,7 @@ GetOptions(
     'c|context:s' => \$options->{context},
     'f|fork' => \$options->{fork},
     'g|group' => \$options->{group},
+    'i|interactive' => \$options->{interactive},
     's|single' => \$options->{single}
 );
 

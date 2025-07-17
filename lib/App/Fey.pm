@@ -27,6 +27,13 @@ sub launch {
     my $self = shift;
     my $options = ref $_[0] ? shift : {};
 
+    if (!(-t STDIN)) {
+        _read_stdin(\@_);
+    }
+    if (!@_ || $options->{interactive}) {
+        open STDIN, '<', '/dev/tty'; 
+        _read_stdin(\@_);
+    }
     die "No files or URIs specified.\n" unless @_;
 
     if ($options->{group}) {
@@ -126,6 +133,13 @@ sub _get_handler {
                 }
             }
         }
+    }
+}
+
+sub _read_stdin {
+    for my $file_or_uri (<STDIN>) {
+        chomp $file_or_uri;
+        push @{ $_[0] }, $file_or_uri;
     }
 }
 
